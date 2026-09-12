@@ -53,15 +53,41 @@ re-apply the fenced block, or newer installer fixes silently stop applying.
 ## Build
 
 Builds happen on GitHub Actions (`.github/workflows/release.yml`): push a
-`v*` tag and a draft Release appears with the Windows `.exe`/`.msi` and a
-universal macOS `.dmg`. Local builds are possible but the owner's PC runs
-Smart App Control, which blocks new build-script binaries, so CI is the path.
+`v*` tag and a published Release appears with the Windows `.exe`/`.msi`, a
+universal macOS `.dmg`, and the `latest.json` installed apps update from. A
+tag is a release — tag deliberately. Local builds are possible but the owner's
+PC runs Smart App Control, which blocks new build-script binaries, so CI is
+the path.
 
 Locally: Rust (`rustup`) plus, on Windows, the Visual Studio Build Tools with
 the C++ workload. `npm run dev` opens the window against the live site;
 `npm run build` writes installers to `src-tauri/target/release/bundle/`.
+`scratch/finish-test.nsi` compiles just the installer's finish page with
+Tauri's own `makensis`, for iterating on the theme without a CI round trip.
 
-## Signing — not yet
+## Updates
+
+Terminal changes need no app update: the window shows the live site. Shell
+changes ship as a release; installed apps check `latest.json` fifteen seconds
+after launch and daily after that, offer the update in a KRONOS-styled window
+(`ui/update.html`), download with a real progress bar, verify the release's
+signature against the public key in `tauri.conf.json`, and relaunch. "Later"
+snoozes for a day. Logic in `src-tauri/src/updater.rs`.
+
+**The updater private key** is `~/.tauri/kronos-desktop.key` on the owner's
+PC and the `TAURI_SIGNING_PRIVATE_KEY` repo secret. Back it up in a password
+manager. Lose it and every installed app is orphaned — it can never update
+again and needs a fresh manual install.
+
+## What is and is not in this repo
+
+Public on purpose. It holds a URL, icons, an installer script, an update
+window and the Rust that opens a window. It holds none of the Terminal — no
+pages, routes, engine, keys — which lives in a private repo and runs on
+Cloudflare. A clone of this builds an app that opens the site at its login
+screen; sign-in is enforced by the server on every request, not by the shell.
+
+## Code signing — not yet
 
 Builds are unsigned. Windows shows SmartScreen "unrecognized app"; macOS
 shows Gatekeeper "unidentified developer". These builds are for the owner and
