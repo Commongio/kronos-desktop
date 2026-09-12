@@ -180,8 +180,10 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 ; where MUI allows and light where Windows insists — that boundary is the
 ; toolkit's, not a bug here.
 ; ═══════════════════════════════════════════════════════════════════════════
-!define MUI_BGCOLOR "05080F"
-!define MUI_TEXTCOLOR "EDEBE6"
+; True black and white. The site is #05080F, which reads navy next to white
+; text at installer sizes; the installer is not the site.
+!define MUI_BGCOLOR "000000"
+!define MUI_TEXTCOLOR "FFFFFF"
 !define MUI_HEADERIMAGE_BITMAP_NOSTRETCH
 !define MUI_HEADERIMAGE_UNBITMAP_NOSTRETCH
 
@@ -454,7 +456,20 @@ Var AppStartMenuFolder
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION RunMainBinary
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW KRONOS_FinishShow ; KRONOS THEME
 !insertmacro MUI_PAGE_FINISH
+
+; KRONOS THEME. MUI2 does call SetCtlColors on the two finish-page checkboxes,
+; but a checkbox under Windows visual styles paints its own label and ignores
+; it - so "Run KRONOS" came out black on black. Removing the theme from just
+; those two controls makes them honour the colour. The box itself goes
+; classic-square; the label is readable, which is the point.
+Function KRONOS_FinishShow
+  System::Call 'uxtheme::SetWindowTheme(p $mui.FinishPage.Run, w " ", w " ")'
+  SetCtlColors $mui.FinishPage.Run "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+  System::Call 'uxtheme::SetWindowTheme(p $mui.FinishPage.ShowReadme, w " ", w " ")'
+  SetCtlColors $mui.FinishPage.ShowReadme "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+FunctionEnd
 
 Function RunMainBinary
   nsis_tauri_utils::RunAsUser "$INSTDIR\${MAINBINARYNAME}.exe" ""

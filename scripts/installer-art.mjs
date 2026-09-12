@@ -7,7 +7,7 @@ import sharp from "sharp";
 import { writeFileSync } from "node:fs";
 
 const OUT = "src-tauri/installer/";
-const BG = { r: 5, g: 8, b: 15 };
+const BG = { r: 0, g: 0, b: 0 };  // true black: must match MUI_BGCOLOR or the sidebar shows a seam
 
 // 24-bit bottom-up BMP from raw RGB. Rows padded to 4 bytes.
 function bmp(raw, w, h) {
