@@ -460,15 +460,68 @@ Var AppStartMenuFolder
 !insertmacro MUI_PAGE_FINISH
 
 ; KRONOS THEME. MUI2 does call SetCtlColors on the two finish-page checkboxes,
-; but a checkbox under Windows visual styles paints its own label and ignores
-; it - so "Run KRONOS" came out black on black. Removing the theme from just
-; those two controls makes them honour the colour. The box itself goes
-; classic-square; the label is readable, which is the point.
+; but a checkbox under Windows visual styles paints its own caption and
+; ignores it - so "Run KRONOS" came out black on black. Stripping the theme
+; fixes the colour but turns the box classic-square. So instead: keep the
+; themed box, blank its caption, and lay a white label over where the caption
+; was. Clicking the label toggles the box, so it behaves as one control.
+!ifndef SS_NOTIFY
+  !define SS_NOTIFY 0x0100
+!endif
+Var KronosLabelRun
+Var KronosLabelDesktop
+
+; In: $R0 = checkbox hwnd.  Out: $R1 = the label laid over its caption.
+Function KRONOS_Relabel
+  System::Call 'user32::GetWindowTextW(p $R0, w .r6, i 256)'
+  SendMessage $R0 ${WM_SETTEXT} 0 "STR:"
+  ; The checkbox rectangle in the page's own pixels, whatever the DPI.
+  System::Call '*(i, i, i, i) p .r1'
+  System::Call 'user32::GetWindowRect(p $R0, p r1)'
+  System::Call 'user32::MapWindowPoints(p 0, p $mui.FinishPage, p r1, i 2)'
+  System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
+  System::Free $1
+  ; The box glyph is about as wide as the control is tall; start the label
+  ; just past it, and run it to the checkbox's right edge.
+  IntOp $7 $5 - $3
+  IntOp $2 $2 + $7
+  IntOp $2 $2 + 2
+  IntOp $4 $4 - $2
+  nsDialogs::CreateControl STATIC ${__NSD_Label_STYLE}|${SS_NOTIFY} ${__NSD_Label_EXSTYLE} $2 $3 $4 $7 "$6"
+  Pop $R1
+  SetCtlColors $R1 "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+FunctionEnd
+
+Function KRONOS_ToggleRun
+  Pop $0
+  ${NSD_GetState} $mui.FinishPage.Run $0
+  ${If} $0 == ${BST_CHECKED}
+    ${NSD_Uncheck} $mui.FinishPage.Run
+  ${Else}
+    ${NSD_Check} $mui.FinishPage.Run
+  ${EndIf}
+FunctionEnd
+
+Function KRONOS_ToggleDesktop
+  Pop $0
+  ${NSD_GetState} $mui.FinishPage.ShowReadme $0
+  ${If} $0 == ${BST_CHECKED}
+    ${NSD_Uncheck} $mui.FinishPage.ShowReadme
+  ${Else}
+    ${NSD_Check} $mui.FinishPage.ShowReadme
+  ${EndIf}
+FunctionEnd
+
 Function KRONOS_FinishShow
-  System::Call 'uxtheme::SetWindowTheme(p $mui.FinishPage.Run, w " ", w " ")'
-  SetCtlColors $mui.FinishPage.Run "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
-  System::Call 'uxtheme::SetWindowTheme(p $mui.FinishPage.ShowReadme, w " ", w " ")'
-  SetCtlColors $mui.FinishPage.ShowReadme "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
+  StrCpy $R0 $mui.FinishPage.Run
+  Call KRONOS_Relabel
+  StrCpy $KronosLabelRun $R1
+  ${NSD_OnClick} $KronosLabelRun KRONOS_ToggleRun
+
+  StrCpy $R0 $mui.FinishPage.ShowReadme
+  Call KRONOS_Relabel
+  StrCpy $KronosLabelDesktop $R1
+  ${NSD_OnClick} $KronosLabelDesktop KRONOS_ToggleDesktop
 FunctionEnd
 
 Function RunMainBinary
