@@ -30,12 +30,18 @@
 //   alerts come from the app instead of reporting Web Push unsupported,
 //   checkout can return via a deep link instead of a browser tab.
 //
+//   IT UPDATES ITSELF, RARELY. Terminal changes need nothing — the window
+//   shows the live site. Shell changes go through src/updater.rs: a signed
+//   release, a KRONOS-styled offer, a real progress bar, and a relaunch.
+//
 //   ALERTS SURVIVE THE CLOSE BUTTON. Native webviews have no Web Push, so the
 //   Terminal's DesktopAlerts.jsx polls once a minute and calls
 //   `new Notification()` — which tauri-plugin-notification bridges to the OS
 //   notification centre. That only works while the page is alive, so the
 //   close button hides to the tray instead of quitting. Quit is on the tray
 //   menu, where it is a decision rather than a reflex.
+mod updater;
+
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -82,6 +88,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updater::Pending::default())
+        .invoke_handler(tauri::generate_handler![updater::install_update, updater::snooze_update])
         // Registered but OFF by default. Launching at login is the user's call
         // from the tray menu, not something an installer decides for them.
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
@@ -156,6 +165,8 @@ pub fn run() {
                     NewWindowResponse::Deny
                 })
                 .build()?;
+
+            updater::start(app.handle().clone());
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -481,13 +481,16 @@ Function KRONOS_Relabel
   System::Call 'user32::MapWindowPoints(p 0, p $mui.FinishPage, p r1, i 2)'
   System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
   System::Free $1
-  ; The box glyph is about as wide as the control is tall; start the label
-  ; just past it, and run it to the checkbox's right edge.
+  ; The box glyph is about as wide as the control is tall. Shrink the
+  ; checkbox to exactly that, so it no longer paints over the caption area
+  ; (a 195u-wide empty checkbox draws its background on top of anything put
+  ; there), then start the label just past it.
   IntOp $7 $5 - $3
+  System::Call 'user32::SetWindowPos(p $R0, p 0, i 0, i 0, i $7, i $7, i 0x0006)'
   IntOp $2 $2 + $7
   IntOp $2 $2 + 2
   IntOp $4 $4 - $2
-  nsDialogs::CreateControl STATIC ${__NSD_Label_STYLE}|${SS_NOTIFY} ${__NSD_Label_EXSTYLE} $2 $3 $4 $7 "$6"
+  nsDialogs::CreateControl STATIC ${__NSD_Label_STYLE}|${SS_NOTIFY} 0 $2 $3 $4 $7 "$6"
   Pop $R1
   SetCtlColors $R1 "${MUI_TEXTCOLOR}" "${MUI_BGCOLOR}"
 FunctionEnd

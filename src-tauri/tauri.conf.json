@@ -1,9 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "KRONOS",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "identifier": "online.kronosterminal.desktop",
-  "build": {},
+  "build": {
+    "frontendDist": "../ui"
+  },
   "app": {
     "windows": [
       {
@@ -21,7 +23,8 @@
     ],
     "security": {
       "csp": null
-    }
+    },
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
@@ -55,6 +58,18 @@
       "wix": {
         "bannerPath": "installer/wix-banner.bmp",
         "dialogImagePath": "installer/wix-dialog.bmp"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBNDFBMTcwMUZCRjk1NTEKUldSUmxiOGZjS0ZCT21TVVl2WUtKb0RONmlTQ2JPWnhUK1BUSDlzT1I4T0VUaVEweElxZ1ZFR24K",
+      "endpoints": [
+        "https://github.com/Commongio/kronos-desktop/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
       }
     }
   }

@@ -1,6 +1,6 @@
 [package]
 name = "kronos-desktop"
-version = "0.1.3"
+version = "0.1.4"
 description = "KRONOS Terminal as an installed desktop app"
 authors = ["KRONOS"]
 edition = "2021"
@@ -19,6 +19,10 @@ tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
 url = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+urlencoding = "2"
+tokio = { version = "1", features = ["time"] }
 
 [profile.release]
 # A shell for a website has no reason to be big or slow to start.

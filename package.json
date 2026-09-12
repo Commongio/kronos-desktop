@@ -1,6 +1,6 @@
 {
   "name": "kronos-desktop",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "KRONOS Terminal as an installed desktop app. A window on kronosterminal.online — no Terminal code, no secrets.",
   "scripts": {

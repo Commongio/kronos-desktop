@@ -6,9 +6,18 @@
 # be built on a Mac. So a tag push is the build, and Releases is where the
 # installers live.
 #
-# Unsigned. Until certificates are added, SmartScreen and Gatekeeper will warn
-# on every install; these releases are for the owner and testers. The Release
-# is created as a DRAFT so nothing is public until it is looked at.
+# Code-signing: none yet. SmartScreen and Gatekeeper will warn on every
+# install until certificates are added.
+#
+# Update-signing: every release IS signed, with the Tauri updater key
+# (TAURI_SIGNING_PRIVATE_KEY, a repo secret; the public half is compiled into
+# tauri.conf.json). Installed apps verify that signature before installing an
+# update, which is what makes auto-update safe to have. If that private key is
+# ever lost, every installed app is orphaned — it can never update again.
+#
+# Releases are PUBLISHED, not drafts: the updater fetches
+# releases/latest/download/latest.json, which only resolves to a published
+# release. A tag push is therefore a release, so tag deliberately.
 name: release
 
 on:
@@ -52,6 +61,7 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'manual-build' }}
           releaseName: "KRONOS ${{ github.ref_type == 'tag' && github.ref_name || 'manual build' }}"
@@ -59,6 +69,7 @@ jobs:
             KRONOS Terminal desktop app — a window on kronosterminal.online.
 
             **Unsigned build.** Windows: SmartScreen will say "Windows protected your PC" — click *More info → Run anyway*. Smart App Control blocks it outright. macOS: right-click the app → Open on first launch.
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
