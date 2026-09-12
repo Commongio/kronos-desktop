@@ -89,6 +89,9 @@ screen; sign-in is enforced by the server on every request, not by the shell.
 
 ## Code signing — not yet
 
+Step-by-step for both platforms, and for backing up the updater key, in
+[docs/SIGNING.md](docs/SIGNING.md).
+
 Builds are unsigned. Windows shows SmartScreen "unrecognized app"; macOS
 shows Gatekeeper "unidentified developer". These builds are for the owner and
 testers only, and the download link stays off the landing page until at least
