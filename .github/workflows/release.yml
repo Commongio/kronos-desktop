@@ -65,10 +65,12 @@ jobs:
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'manual-build' }}
           releaseName: "KRONOS ${{ github.ref_type == 'tag' && github.ref_name || 'manual build' }}"
+          # This body is also what installed apps show as the update notes, so
+          # it must read as notes, not as an installer warning.
           releaseBody: |
-            KRONOS Terminal desktop app — a window on kronosterminal.online.
+            KRONOS desktop ${{ github.ref_name }}. Installed apps update themselves from here.
 
-            **Unsigned build.** Windows: SmartScreen will say "Windows protected your PC" — click *More info → Run anyway*. Smart App Control blocks it outright. macOS: right-click the app → Open on first launch.
+            First install on Windows: SmartScreen will say "Windows protected your PC" until the app is code-signed - click More info, then Run anyway. macOS: right-click the app and choose Open on first launch.
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
