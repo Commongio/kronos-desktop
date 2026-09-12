@@ -29,11 +29,29 @@
 //   any page script runs, so the Terminal can adapt — PushAlerts can say
 //   alerts come from the app instead of reporting Web Push unsupported,
 //   checkout can return via a deep link instead of a browser tab.
+//
+//   ALERTS SURVIVE THE CLOSE BUTTON. Native webviews have no Web Push, so the
+//   Terminal's DesktopAlerts.jsx polls once a minute and calls
+//   `new Notification()` — which tauri-plugin-notification bridges to the OS
+//   notification centre. That only works while the page is alive, so the
+//   close button hides to the tray instead of quitting. Quit is on the tray
+//   menu, where it is a decision rather than a reflex.
 use tauri::{
+    menu::{CheckMenuItem, Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     webview::{NewWindowResponse, WebviewWindowBuilder},
-    Manager,
+    AppHandle, Manager, WindowEvent,
 };
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
 use tauri_plugin_opener::OpenerExt;
+
+fn show_main(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
 
 /// The one origin the window may navigate within. Everything else is handed
 /// to the system browser.
@@ -63,7 +81,49 @@ const INIT_SCRIPT: &str = r#"
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
+        // Registered but OFF by default. Launching at login is the user's call
+        // from the tray menu, not something an installer decides for them.
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                // Hide, don't close: the page keeps polling for signals.
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .setup(|app| {
+            let open = MenuItem::with_id(app, "open", "Open KRONOS", true, None::<&str>)?;
+            let at_login = CheckMenuItem::with_id(
+                app, "autostart", "Launch at login", true,
+                app.autolaunch().is_enabled().unwrap_or(false), None::<&str>,
+            )?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&open, &at_login, &quit])?;
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().cloned().expect("bundle icon"))
+                .tooltip("KRONOS")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(move |app, e| match e.id.as_ref() {
+                    "open" => show_main(app),
+                    "autostart" => {
+                        // The check state has already flipped by the time
+                        // this runs; make the OS agree with it.
+                        let want = at_login.is_checked().unwrap_or(false);
+                        let r = if want { app.autolaunch().enable() } else { app.autolaunch().disable() };
+                        if r.is_err() { let _ = at_login.set_checked(!want); }
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, e| {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+                        show_main(tray.app_handle());
+                    }
+                })
+                .build(app)?;
+
             let cfg = app
                 .config()
                 .app

@@ -7,9 +7,10 @@
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs && node scripts/installer-art.mjs"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4"
+    "@tauri-apps/cli": "^2.11.4",
+    "sharp": "^0.35.4"
   }
 }

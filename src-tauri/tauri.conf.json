@@ -38,8 +38,22 @@
       "icons/icon.ico"
     ],
     "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "sidebarImage": "installer/nsis-sidebar.bmp",
+        "headerImage": "installer/nsis-header.bmp",
+        "uninstallerHeaderImage": "installer/nsis-header.bmp",
+        "startMenuFolder": "KRONOS"
+      },
+      "wix": {
+        "bannerPath": "installer/wix-banner.bmp",
+        "dialogImagePath": "installer/wix-dialog.bmp"
       }
     }
   }

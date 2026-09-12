@@ -1,0 +1,64 @@
+# Builds the installers on GitHub's machines and attaches them to a Release.
+#
+# Why here and not locally: the owner's PC runs Smart App Control, which
+# blocks every freshly compiled build-script binary it has not seen before —
+# and Cargo produces a new one on every dependency change. macOS also has to
+# be built on a Mac. So a tag push is the build, and Releases is where the
+# installers live.
+#
+# Unsigned. Until certificates are added, SmartScreen and Gatekeeper will warn
+# on every install; these releases are for the owner and testers. The Release
+# is created as a DRAFT so nothing is public until it is looked at.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            args: ""
+          - os: macos-latest
+            # One .dmg that runs on Apple Silicon and Intel.
+            args: "--target universal-apple-darwin"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'manual-build' }}
+          releaseName: "KRONOS ${{ github.ref_type == 'tag' && github.ref_name || 'manual build' }}"
+          releaseBody: |
+            KRONOS Terminal desktop app — a window on kronosterminal.online.
+
+            **Unsigned build.** Windows: SmartScreen will say "Windows protected your PC" — click *More info → Run anyway*. Smart App Control blocks it outright. macOS: right-click the app → Open on first launch.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
