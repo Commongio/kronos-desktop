@@ -49,7 +49,8 @@
         "sidebarImage": "installer/nsis-sidebar.bmp",
         "headerImage": "installer/nsis-header.bmp",
         "uninstallerHeaderImage": "installer/nsis-header.bmp",
-        "startMenuFolder": "KRONOS"
+        "startMenuFolder": "KRONOS",
+        "template": "installer/installer.nsi"
       },
       "wix": {
         "bannerPath": "installer/wix-banner.bmp",
