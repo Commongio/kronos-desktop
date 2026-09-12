@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The main window. No `remote` block on purpose: the page is kronosterminal.online, and it gets no IPC into this app until something here needs it. A website that can call into the shell is a larger surface than a website.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

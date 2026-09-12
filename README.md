@@ -1,0 +1,58 @@
+# kronos-desktop
+
+KRONOS Terminal as an installed Windows / macOS app.
+
+**This repo contains no Terminal code and no secrets.** It is a native window
+pointed at `https://kronosterminal.online/terminal`. Everything that decides
+anything — Stripe, the crons, the Lab contract, the model calls — stays on
+Cloudflare. Auth is a Bearer token the page keeps in `localStorage`, so
+loading the live origin directly means login, checkout, the SSE trade stream
+and every API route work exactly as in a browser, with zero API changes.
+
+The frontend is deliberately **not bundled**. Bundling would put the page on
+`tauri://localhost` and make every call cross-origin — CORS, cookie SameSite,
+and a second deploy pipeline whose version could drift from the site's.
+
+## What the shell adds over a browser tab
+
+- **Outside links go outside.** Stripe checkout, article links, the Lab —
+  anything not on `kronosterminal.online` opens in the system browser. In a
+  webview with no back button, an in-place navigation to stripe.com strands
+  the user on a payment page with no way home. `src-tauri/src/lib.rs`
+  intercepts both navigation and `window.open`.
+- **The page knows where it is.** `window.__KRONOS_DESKTOP__ === true` before
+  any page script runs, so the Terminal can adapt.
+- **No offline mode, no caching.** A silently stale price is a real-money
+  bug; the Terminal's own service worker says the same.
+
+## Icons
+
+Two masters in `icon-src/`, both from Gio's KT-letters artwork:
+
+| File | Used for |
+|---|---|
+| `icon-outline-1024.png` | Windows taskbar, tray, installer — white glyph with a black outline on transparent, so it reads on the light taskbar Windows 11 defaults to |
+| `icon-mac-1024.png` | macOS Dock — the glyph on a rounded `#05080F` tile, because Apple draws no mask and a bare glyph looks broken beside every other Dock icon |
+
+`npm run icons` regenerates `src-tauri/icons/` from both (`scripts/icons.mjs`).
+
+## Build
+
+Needs Rust (`rustup`) and, on Windows, the Visual Studio Build Tools with the
+C++ workload. WebView2 ships with Windows 11.
+
+```
+npm install
+npm run dev      # cargo tauri dev — opens the window against the live site
+npm run build    # .msi + NSIS setup.exe on Windows, .app/.dmg on macOS
+```
+
+Output lands in `src-tauri/target/release/bundle/`.
+
+## Signing — not yet
+
+Builds are unsigned. Windows shows SmartScreen "unrecognized app"; macOS
+shows Gatekeeper "unidentified developer". These builds are for the owner and
+testers only, and the download link stays off the landing page until at least
+the Apple Developer account ($99/yr) is in place. The public install path
+until then is the PWA install button in the Terminal's own header.
