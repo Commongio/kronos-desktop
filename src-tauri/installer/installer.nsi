@@ -187,15 +187,10 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 
 !define MUI_WELCOMEPAGE_TITLE "KRONOS Terminal"
 !define MUI_WELCOMEPAGE_TITLE_3LINES
-!define MUI_WELCOMEPAGE_TEXT "Live trading intelligence, signals and the AI desk — as an app on this PC.$$
-$$
-This installs a small window on kronosterminal.online. Nothing runs locally and nothing is cached: every price and signal you see is live.$$
-$$
-Click Next to continue."
-
+!define MUI_WELCOMEPAGE_TEXT "Live trading intelligence, signals and the AI desk - as an app on this PC.$\r$\n$\r$\nThis installs a small window on kronosterminal.online. Nothing runs locally and nothing is cached: every price and signal you see is live.$\r$\n$\r$\nClick Next to continue."
 !define MUI_FINISHPAGE_TITLE "KRONOS is installed"
 !define MUI_FINISHPAGE_TITLE_3LINES
-!define MUI_FINISHPAGE_TEXT "Sign in with your Terminal account. Alerts arrive as Windows notifications while the app is open — closing the window keeps it running in the tray."
+!define MUI_FINISHPAGE_TEXT "Sign in with your Terminal account. Alerts arrive as Windows notifications while the app is open. Closing the window keeps it running in the tray."
 ; ═══════════════════════════════════════════════════════════════════════════
 
 ; Installer pages, must be ordered as they appear
