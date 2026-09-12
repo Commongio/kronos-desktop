@@ -190,7 +190,18 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 !define MUI_WELCOMEPAGE_TEXT "Live trading intelligence, signals and the AI desk - as an app on this PC.$\r$\n$\r$\nThis installs a small window on kronosterminal.online. Nothing runs locally and nothing is cached: every price and signal you see is live.$\r$\n$\r$\nClick Next to continue."
 !define MUI_FINISHPAGE_TITLE "KRONOS is installed"
 !define MUI_FINISHPAGE_TITLE_3LINES
-!define MUI_FINISHPAGE_TEXT "Sign in with your Terminal account. Alerts arrive as Windows notifications while the app is open. Closing the window keeps it running in the tray."
+!define MUI_FINISHPAGE_TEXT "Sign in with your Terminal account. Closing the window keeps KRONOS running in the tray, so alerts still arrive.$\r$\n$\r$\nIf the desktop shortcut shows a plain icon, it becomes the KT mark the first time you launch the app."
+
+; Explorer asks for a shortcut's icon the instant the .lnk appears, which can
+; be while Defender still has the freshly written exe open for its scan. The
+; read fails, the GENERIC icon is cached for that path, and it stays until
+; something makes the shell look again - usually the first launch. Tauri's
+; template never tells the shell the item changed; this does, at each of the
+; three CreateShortcut sites below (each marked "; KRONOS THEME").
+; SHCNE_UPDATEITEM = 0x2000, SHCNF_PATHW = 0x0005.
+!macro KRONOS_NotifyShell LNK
+  System::Call 'shell32::SHChangeNotify(i 0x00002000, i 0x0005, w "${LNK}", i 0)'
+!macroend
 ; ═══════════════════════════════════════════════════════════════════════════
 
 ; Installer pages, must be ordered as they appear
@@ -976,9 +987,11 @@ Function CreateOrUpdateStartMenuShortcut
     CreateDirectory "$SMPROGRAMS\$AppStartMenuFolder"
     CreateShortcut "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk"
+    !insertmacro KRONOS_NotifyShell "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" ; KRONOS THEME
   !else
     CreateShortcut "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+    !insertmacro KRONOS_NotifyShell "$SMPROGRAMS\${PRODUCTNAME}.lnk" ; KRONOS THEME
   !endif
 FunctionEnd
 
@@ -1003,4 +1016,5 @@ Function CreateOrUpdateDesktopShortcut
 
   CreateShortcut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
   !insertmacro SetLnkAppUserModelId "$DESKTOP\${PRODUCTNAME}.lnk"
+  !insertmacro KRONOS_NotifyShell "$DESKTOP\${PRODUCTNAME}.lnk" ; KRONOS THEME
 FunctionEnd
