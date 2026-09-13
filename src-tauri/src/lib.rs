@@ -68,6 +68,20 @@ const HOME_HOST: &str = "kronosterminal.online";
 /// and bouncing that to an external browser would strand the session there.
 const IN_WINDOW_HOSTS: &[&str] = &["supabase.co"];
 
+/// The marketing page. Anyone running this app is already a user, and a
+/// window with no address bar must never land on a page whose only exits
+/// are "Log in" and "Sign up" — the terminal shows its own login card when
+/// signed out. A navigation to "/" on the home host is redirected here to
+/// /terminal, query intact, so a Stripe return or a stale link still works.
+fn marketing_page_redirect(url: &url::Url) -> Option<url::Url> {
+    let host = url.host_str()?;
+    if host != HOME_HOST && host != format!("www.{HOME_HOST}") { return None; }
+    if url.path() != "/" { return None; }
+    let mut to = url.clone();
+    to.set_path("/terminal");
+    Some(to)
+}
+
 fn stays_in_window(url: &url::Url) -> bool {
     let Some(host) = url.host_str() else { return true }; // about:blank and friends
     if host == HOME_HOST || host.ends_with(&format!(".{HOME_HOST}")) {
@@ -148,6 +162,16 @@ pub fn run() {
             WebviewWindowBuilder::from_config(app, &cfg)?
                 .initialization_script(INIT_SCRIPT)
                 .on_navigation(move |url| {
+                    if let Some(to) = marketing_page_redirect(url) {
+                        // Refused here; re-sent from outside the callback,
+                        // since navigating from inside a navigation hook
+                        // re-enters it.
+                        let h = handle_nav.clone();
+                        tauri::async_runtime::spawn(async move {
+                            if let Some(w) = h.get_webview_window("main") { let _ = w.navigate(to); }
+                        });
+                        return false;
+                    }
                     if stays_in_window(url) {
                         return true;
                     }
@@ -199,6 +223,20 @@ mod tests {
         // difference between a subdomain and a domain someone else owns.
         assert!(!stays_in_window(&Url::parse("https://kronosterminal.online.evil.com/").unwrap()));
         assert!(!stays_in_window(&Url::parse("https://notkronosterminal.online/").unwrap()));
+    }
+
+    #[test]
+    fn the_marketing_page_is_redirected_to_the_terminal() {
+        use super::marketing_page_redirect;
+        let r = marketing_page_redirect(&Url::parse("https://kronosterminal.online/").unwrap()).unwrap();
+        assert_eq!(r.as_str(), "https://kronosterminal.online/terminal");
+        // The Stripe return keeps its query.
+        let r = marketing_page_redirect(&Url::parse("https://kronosterminal.online/?billing=success").unwrap()).unwrap();
+        assert_eq!(r.as_str(), "https://kronosterminal.online/terminal?billing=success");
+        // Only the root, only our host.
+        assert!(marketing_page_redirect(&Url::parse("https://kronosterminal.online/terminal").unwrap()).is_none());
+        assert!(marketing_page_redirect(&Url::parse("https://kronosterminal.online/login").unwrap()).is_none());
+        assert!(marketing_page_redirect(&Url::parse("https://example.com/").unwrap()).is_none());
     }
 
     #[test]
