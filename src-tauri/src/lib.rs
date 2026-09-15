@@ -102,9 +102,22 @@ const INIT_SCRIPT: &str = r#"
     if (e.key === "F11" || (e.altKey && e.key === "Enter")) {
       e.preventDefault();
       window.__TAURI__?.core?.invoke("toggle_fullscreen").catch(() => {});
+    } else if (e.key === "Escape") {
+      // Escape leaves full screen and nothing else; the page still gets
+      // the key, so its own modals close as before.
+      window.__TAURI__?.core?.invoke("exit_fullscreen").catch(() => {});
     }
   }, true);
 "#;
+
+/// Escape from the page. A no-op unless the window is full screen.
+#[tauri::command]
+fn exit_fullscreen(window: tauri::Window) -> Result<(), String> {
+    if window.is_fullscreen().map_err(|e| e.to_string())? {
+        window.set_fullscreen(false).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 
 /// F11 / Alt+Enter from the page. Toggles the window it came from.
 #[tauri::command]
@@ -127,7 +140,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(updater::Pending::default())
-        .invoke_handler(tauri::generate_handler![updater::install_update, updater::snooze_update, toggle_fullscreen])
+        .invoke_handler(tauri::generate_handler![updater::install_update, updater::snooze_update, toggle_fullscreen, exit_fullscreen])
         // Registered but OFF by default. Launching at login is the user's call
         // from the tray menu, not something an installer decides for them.
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))

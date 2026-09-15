@@ -4,5 +4,5 @@
   "description": "What kronosterminal.online may call in this app. Two things: raise an OS notification, so DesktopAlerts.jsx's `new Notification()` reaches the notification centre; and toggle full screen, which the shell's own F11 / Alt+Enter handler invokes. Nothing else — a website that can call into the shell is a larger surface than a website, and this is the whole of it.",
   "remote": { "urls": ["https://kronosterminal.online/*"] },
   "windows": ["main"],
-  "permissions": ["notification:default", "allow-toggle-fullscreen"]
+  "permissions": ["notification:default", "allow-toggle-fullscreen", "allow-exit-fullscreen"]
 }

@@ -5,6 +5,9 @@ window, word for word. Keep it short and outward-facing: what a user
 gets, not how it was built. Add the new version at the top BEFORE
 tagging; the release workflow refuses a tag with no section.
 
+## 0.1.13
+- Escape leaves full screen
+
 ## 0.1.12
 - Bugs fixed
 - Full screen with F11 or Alt+Enter
