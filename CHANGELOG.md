@@ -5,6 +5,9 @@ window, word for word. Keep it short and outward-facing: what a user
 gets, not how it was built. Add the new version at the top BEFORE
 tagging; the release workflow refuses a tag with no section.
 
+## 0.1.11
+- The update window shows what changed, as a list
+
 ## 0.1.10
 - Bugs fixed
 - Release notes now say what changed
