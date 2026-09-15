@@ -1,6 +1,6 @@
 [package]
 name = "kronos-desktop"
-version = "0.1.7"
+version = "0.1.8"
 description = "KRONOS Terminal as an installed desktop app"
 authors = ["KRONOS"]
 edition = "2021"
@@ -20,6 +20,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
 url = "2"
 tauri-plugin-updater = "2"
+tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 urlencoding = "2"
 tokio = { version = "1", features = ["time"] }

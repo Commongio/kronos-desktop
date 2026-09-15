@@ -100,6 +100,13 @@ const INIT_SCRIPT: &str = r#"
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // One copy, ever. Registered first, as the plugin requires. A second
+        // launch — a stale shortcut, a double-click on the tray, a relaunch
+        // after an update — brings the running window forward instead of
+        // starting another process. Measured on 2026-09-14: five instances
+        // running at once, and the passive NSIS updater could not replace
+        // the executable underneath them, so 0.1.7 was offered forever.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { show_main(app); }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
