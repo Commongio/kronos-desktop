@@ -74,7 +74,7 @@ jobs:
             Until the app is code-signed, SmartScreen says "Windows protected your PC" on first install. Click More info, then Run anyway.
 
             macOS:
-            Drag KRONOS into Applications first — running it from the disk image is not an install. On first launch, right-click KRONOS and choose Open. Closing the window keeps KRONOS in the Dock; click the Dock icon to bring it back, Cmd+Q to quit.
+            Drag KRONOS into Applications first — running it from the disk image is not an install. On first launch, right-click KRONOS and choose Open. Guide: https://kronosterminal.online/desktop/mac
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
