@@ -55,7 +55,10 @@ re-apply the fenced block, or newer installer fixes silently stop applying.
 Builds happen on GitHub Actions (`.github/workflows/release.yml`): push a
 `v*` tag and a published Release appears with the Windows `.exe`/`.msi`, a
 universal macOS `.dmg`, and the `latest.json` installed apps update from. A
-tag is a release — tag deliberately. Local builds are possible but the owner's
+tag is a release — tag deliberately, and add a `## <version>` section to
+`CHANGELOG.md` first: it becomes the release body, which is what installed
+apps show in the update window (a tag with no section fails the build).
+Local builds are possible but the owner's
 PC runs Smart App Control, which blocks new build-script binaries, so CI is
 the path.
 

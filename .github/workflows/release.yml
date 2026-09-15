@@ -58,6 +58,20 @@ jobs:
 
       - run: npm ci
 
+      # The release body is what installed apps show in the update window,
+      # so it comes from CHANGELOG.md — the section for this tag, plus the
+      # two install notes. No section for the tag fails the build here,
+      # before anything is compiled or published.
+      - id: notes
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            node scripts/release-notes.mjs "${{ github.ref_name }}" > "$RUNNER_TEMP/notes.md"
+          else
+            echo "Manual build — not a release." > "$RUNNER_TEMP/notes.md"
+          fi
+          { echo "body<<KRONOS_EOF"; cat "$RUNNER_TEMP/notes.md"; echo "KRONOS_EOF"; } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,16 +79,8 @@ jobs:
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'manual-build' }}
           releaseName: "KRONOS ${{ github.ref_type == 'tag' && github.ref_name || 'manual build' }}"
-          # This body is also what installed apps show as the update notes, so
-          # it must read as notes, not as an installer warning.
-          releaseBody: |
-            KRONOS desktop ${{ github.ref_name }}. Installed apps update themselves from here.
-
-            Windows:
-            Until the app is code-signed, SmartScreen says "Windows protected your PC" on first install. Click More info, then Run anyway.
-
-            macOS:
-            Drag KRONOS into Applications first — running it from the disk image is not an install. On first launch, right-click KRONOS and choose Open. Guide: https://kronosterminal.online/desktop/mac
+          # From CHANGELOG.md via the notes step above.
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
