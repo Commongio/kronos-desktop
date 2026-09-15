@@ -46,7 +46,7 @@ use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     webview::{NewWindowResponse, WebviewWindowBuilder},
-    AppHandle, Manager, RunEvent, WindowEvent,
+    AppHandle, Manager, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
 use tauri_plugin_opener::OpenerExt;
@@ -95,7 +95,23 @@ fn stays_in_window(url: &url::Url) -> bool {
 /// as possible.
 const INIT_SCRIPT: &str = r#"
   Object.defineProperty(window, "__KRONOS_DESKTOP__", { value: true, writable: false, configurable: false });
+  // F11 or Alt+Enter: full screen, the way a browser does it. The webview
+  // does not do this on its own; the shell owns the window, so the key is
+  // forwarded to it. Captured before the page sees it.
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "F11" || (e.altKey && e.key === "Enter")) {
+      e.preventDefault();
+      window.__TAURI__?.core?.invoke("toggle_fullscreen").catch(() => {});
+    }
+  }, true);
 "#;
+
+/// F11 / Alt+Enter from the page. Toggles the window it came from.
+#[tauri::command]
+fn toggle_fullscreen(window: tauri::Window) -> Result<(), String> {
+    let on = window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(!on).map_err(|e| e.to_string())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -111,7 +127,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(updater::Pending::default())
-        .invoke_handler(tauri::generate_handler![updater::install_update, updater::snooze_update])
+        .invoke_handler(tauri::generate_handler![updater::install_update, updater::snooze_update, toggle_fullscreen])
         // Registered but OFF by default. Launching at login is the user's call
         // from the tray menu, not something an installer decides for them.
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
@@ -208,9 +224,15 @@ pub fn run() {
             // then sends Reopen — and without this arm nothing answered it,
             // so the window could only come back through the tray or a
             // force quit (measured on 2026-09-15). Now it comes back.
-            if let RunEvent::Reopen { .. } = event {
+            //
+            // The variant exists only on macOS; unguarded it broke the
+            // Windows build for three tags (0.1.9–0.1.11 never published).
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
                 show_main(app);
             }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
         });
 }
 

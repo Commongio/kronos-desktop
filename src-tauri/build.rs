@@ -3,7 +3,7 @@ fn main() {
     // capability file for the update window refers to them by name.
     tauri_build::try_build(
         tauri_build::Attributes::new()
-            .app_manifest(tauri_build::AppManifest::new().commands(&["install_update", "snooze_update"])),
+            .app_manifest(tauri_build::AppManifest::new().commands(&["install_update", "snooze_update", "toggle_fullscreen"])),
     )
     .expect("tauri-build");
 }

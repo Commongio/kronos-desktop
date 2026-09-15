@@ -1,6 +1,6 @@
 [package]
 name = "kronos-desktop"
-version = "0.1.11"
+version = "0.1.12"
 description = "KRONOS Terminal as an installed desktop app"
 authors = ["KRONOS"]
 edition = "2021"
