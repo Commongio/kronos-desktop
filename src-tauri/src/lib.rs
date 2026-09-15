@@ -46,7 +46,7 @@ use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     webview::{NewWindowResponse, WebviewWindowBuilder},
-    AppHandle, Manager, WindowEvent,
+    AppHandle, Manager, RunEvent, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
 use tauri_plugin_opener::OpenerExt;
@@ -200,8 +200,18 @@ pub fn run() {
             updater::start(app.handle().clone());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running KRONOS");
+        .build(tauri::generate_context!())
+        .expect("error while building KRONOS")
+        .run(|app, event| {
+            // macOS: the red button hides the window and the app stays in
+            // the Dock, which is how Mac apps behave. Clicking the Dock icon
+            // then sends Reopen — and without this arm nothing answered it,
+            // so the window could only come back through the tray or a
+            // force quit (measured on 2026-09-15). Now it comes back.
+            if let RunEvent::Reopen { .. } = event {
+                show_main(app);
+            }
+        });
 }
 
 #[cfg(test)]
