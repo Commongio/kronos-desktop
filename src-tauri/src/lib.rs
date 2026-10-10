@@ -68,6 +68,35 @@ const HOME_HOST: &str = "kronosterminal.online";
 /// and bouncing that to an external browser would strand the session there.
 const IN_WINDOW_HOSTS: &[&str] = &["supabase.co"];
 
+/// Hosts of third-party content the site EMBEDS, which must load in place.
+///
+/// ── WHY THIS LIST HAS TO EXIST, AND WHY IT IS A macOS PROBLEM ────────────
+///
+/// `on_navigation` reads as though it only sees the window going somewhere.
+/// On Windows that is true: wry hooks WebView2's `NavigationStarting` on the
+/// top-level webview, and frame navigations never reach it.
+///
+/// On macOS it is NOT true. wry implements the hook with WKWebView's
+/// `decidePolicyForNavigationAction:`, which fires for EVERY frame, and wry
+/// passes only the URL — it never consults `navigationAction.targetFrame`
+/// `.isMainFrame`. So an <iframe> loading a widget arrives here looking
+/// exactly like the user clicking a link to another site, and the rule below
+/// does to it what it does to a news link: cancels it and hands the URL to
+/// the system browser.
+///
+/// The result is a widget that renders as an empty black rectangle on macOS
+/// and works fine on Windows — which is precisely how the Discover heatmap
+/// was reported. (It also means a stray browser tab can open on its own.)
+///
+/// Tauri exposes no frame information to this callback, so the fix is this
+/// allowlist rather than a top-level check. **Anything the site embeds must
+/// be added here, or it will be invisible on macOS.** The heatmap's iframe
+/// is served from tradingview-widget.com — a different domain from
+/// tradingview.com, and the one that actually matters; s3.tradingview.com
+/// serves the embed SCRIPT, which is a subresource and never reaches this
+/// hook at all.
+const EMBED_HOSTS: &[&str] = &["tradingview-widget.com", "tradingview.com"];
+
 /// The marketing page. Anyone running this app is already a user, and a
 /// window with no address bar must never land on a page whose only exits
 /// are "Log in" and "Sign up" — the terminal shows its own login card when
@@ -87,7 +116,12 @@ fn stays_in_window(url: &url::Url) -> bool {
     if host == HOME_HOST || host.ends_with(&format!(".{HOME_HOST}")) {
         return true;
     }
-    IN_WINDOW_HOSTS.iter().any(|h| host == *h || host.ends_with(&format!(".{h}")))
+    // The leading dot matters in both lists: without it "notkronosterminal.online"
+    // and "tradingview.com.evil.test" would both pass.
+    IN_WINDOW_HOSTS
+        .iter()
+        .chain(EMBED_HOSTS.iter())
+        .any(|h| host == *h || host.ends_with(&format!(".{h}")))
 }
 
 /// Runs before any page script. Kept tiny: this is the only code the shell
@@ -258,6 +292,30 @@ mod tests {
     fn home_and_subdomains_stay() {
         assert!(stays_in_window(&Url::parse("https://kronosterminal.online/terminal").unwrap()));
         assert!(stays_in_window(&Url::parse("https://www.kronosterminal.online/").unwrap()));
+    }
+
+    #[test]
+    fn embedded_widgets_load_in_place() {
+        // On macOS every <iframe> navigation reaches the same hook a link
+        // click does, so a widget that is not listed here is cancelled and
+        // renders as an empty black rectangle — Windows is unaffected, which
+        // is what made the Discover heatmap look like a Mac-only display bug.
+        //
+        // The heatmap's iframe is on tradingview-WIDGET.com; tradingview.com
+        // is listed too because the widget links out to it.
+        assert!(stays_in_window(
+            &Url::parse("https://www.tradingview-widget.com/embed-widget/stock-heatmap/?locale=en").unwrap()
+        ));
+        assert!(stays_in_window(&Url::parse("https://tradingview-widget.com/x").unwrap()));
+        assert!(stays_in_window(&Url::parse("https://s3.tradingview.com/tv.js").unwrap()));
+    }
+
+    #[test]
+    fn an_embed_lookalike_does_not_pass() {
+        // Same subdomain-suffix trap as the home host: the dot is the guard.
+        assert!(!stays_in_window(&Url::parse("https://tradingview.com.evil.test/").unwrap()));
+        assert!(!stays_in_window(&Url::parse("https://nottradingview.com/").unwrap()));
+        assert!(!stays_in_window(&Url::parse("https://faketradingview-widget.com/").unwrap()));
     }
 
     #[test]
